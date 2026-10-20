@@ -1,0 +1,77 @@
+{
+  "columns": [
+    {
+      "name": "payment_id",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": [
+        "pi_99a87b12-c43e-4d81-9f21-110294821033",
+        "pi_44f32a89-11ef-49b0-8812-783920194855",
+        "pi_77e11c34-99aa-4122-b543-556102938411",
+        "pi_11b88d55-66cc-4833-a123-334920184722"
+      ]
+    },
+    {
+      "name": "merchant_id",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": [
+        "merch_alpha_9921",
+        "merch_beta_4410",
+        "merch_gamma_8832",
+        "merch_delta_1109"
+      ]
+    },
+    {
+      "name": "routed_to",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": [
+        "Stripe-Gateway-Primary",
+        "Razorpay-Gateway-Primary",
+        "Adyen-Failover-Gateway",
+        "CheckoutCom-Routing-Engine"
+      ]
+    },
+    {
+      "name": "routing_availability_state",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": [
+        "Primary Available (Normal Routing)",
+        "Primary Degraded -> Failover Triggered",
+        "Primary Outage -> Full Failover Routing",
+        "Circuit Breaker Open -> Fallback Queue"
+      ]
+    },
+    {
+      "name": "outage_reason",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": [
+        "None (Healthy)",
+        "HTTP 504 Gateway Timeout",
+        "Connection Pool Exhaustion",
+        "TLS Handshake Failure",
+        "Rate Limit Exceeded (HTTP 429)"
+      ]
+    },
+    {
+      "name": "retry_attempt_count",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ]
+    },
+    {
+      "name": "journal_description",
+      "type": "llm_text",
+      "model_alias": "local-ollama",
+      "prompt": "Write a concise corporate financial journal memo and double-ledger audit trail description for payment intent {{ payment_id }} belonging to merchant {{ merchant_id }}. The transaction was routed via {{ routed_to }} under the availability state '{{ routing_availability_state }}' (Outage factor: '{{ outage_reason }}', Retries: {{ retry_attempt_count }}). Ensure balanced DEBIT and CREDIT narrative tracking is implied."
+    }
+  ]
+}
