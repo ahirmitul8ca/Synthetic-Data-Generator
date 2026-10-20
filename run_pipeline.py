@@ -1,21 +1,18 @@
-
 import json
 import sys
 import os
+from pathlib import Path
+
+# Ensure Python looks in the current directory for modules
+BASE_DIR = Path(__file__).resolve().parent
+sys.path.append(str(BASE_DIR))
+
+from File_Manager import ensure_directories, get_target_file_path, SCHEMAS_DIR, SYNTHETIC_DATA_DIR
 from data_designer.interface import DataDesigner
 import data_designer.config as dd
 
-# Import your file manager helper functions
-from File_Manager import ensure_directories, get_target_file_path, SCHEMAS_DIR, SYNTHETIC_DATA_DIR
-
-
-
-
 if __name__ == "__main__":
-    # ==========================================
-    # 1. CONFIGURATION & CLI ARGUMENTS
-    # ==========================================
-    schema_filename = "columns_registry.json"
+    schema_filename = "Double_ledger.json"
     num_records = 50000
 
     if len(sys.argv) > 1:
@@ -27,19 +24,15 @@ if __name__ == "__main__":
         except ValueError:
             print("Warning: Invalid record count provided. Defaulting to 50,000.")
 
-    # ==========================================
-    # 2. ENSURE DIRECTORIES EXIST
-    # ==========================================
-    ensure_directories()  # Checks and builds logs, exports, data, archive, synthetic_data
+    # Ensure all directories exist via file manager
+    ensure_directories()
 
-    # Build schema file path
-    registry_path = os.path.join(SCHEMAS_DIR, schema_filename)
+    # Build schema file path explicitly
+    registry_path = SCHEMAS_DIR / schema_filename
+    
     print(f"\nLoading schema from '{registry_path}'...")
     print(f"Target record volume: {num_records:,} rows using local Ollama (gemma4:e4b)...")
 
-    # ==========================================
-    # 3. LOAD SCHEMA CONFIGURATION
-    # ==========================================
     try:
         with open(registry_path, "r") as f:
             registry_data = json.load(f)
@@ -47,13 +40,10 @@ if __name__ == "__main__":
         print(f"Error: Could not find schema file at '{registry_path}'.")
         sys.exit(1)
 
-    # ==========================================
-    # 4. MODEL CONFIGURATION & EXECUTION
-    # ==========================================
     model_configs = [
         dd.ModelConfig(
             alias="local-ollama",
-            model="gemma4:e4b",
+            model="llama3",  # <-- Change this to your new model name here
             provider="openai",
         )
     ]
@@ -61,12 +51,11 @@ if __name__ == "__main__":
     model_providers = [
         dd.ModelProvider(
             name="openai",
-            endpoint="http://127.0.0.1:11434/v1",
+            endpoint="http://127.0.0.1:11434/v1",  # OpenAI-compatible endpoint
             provider_type="openai",
-            api_key="ollama",
+            api_key="ollama",  # Ollama doesn't need a real key, but expects a non-empty string
         )
     ]
-
     config_builder = dd.DataDesignerConfigBuilder(model_configs=model_configs)
     
     for col in registry_data.get("columns", []):
@@ -96,18 +85,8 @@ if __name__ == "__main__":
         dataset_name="ledger_routing_dataset"
     )
 
-    # ==========================================
-    # 5. EXPORT WITH TIMESTAMPED FILENAME
-    # ==========================================
     base_name = os.path.splitext(schema_filename)[0]
-    
-    # Generate dynamic output path with a date timestamp (e.g., synthetic_data/columns_registry_2026-06-06.csv)
-    output_path = get_target_file_path(
-        prefix=base_name, 
-        target_folder=SYNTHETIC_DATA_DIR, 
-        extension="csv",
-        include_time=False  # Set to True if you want hour-minute-second uniqueness
-    )
+    output_path = get_target_file_path(prefix=base_name, target_folder=SYNTHETIC_DATA_DIR, extension="csv")
 
     dataset_result.to_csv(output_path)
     print(f"\nSuccessfully generated and saved {num_records:,} rows to '{output_path}'!")
