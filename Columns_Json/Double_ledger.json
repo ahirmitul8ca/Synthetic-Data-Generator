@@ -69,9 +69,17 @@
     },
     {
       "name": "journal_description",
-      "type": "llm_text",
-      "model_alias": "local-ollama",
-      "prompt": "Write a concise corporate financial journal memo and double-ledger audit trail description for payment intent {{ payment_id }} belonging to merchant {{ merchant_id }}. The transaction was routed via {{ routed_to }} under the availability state '{{ routing_availability_state }}' (Outage factor: '{{ outage_reason }}', Retries: {{ retry_attempt_count }}). Ensure balanced DEBIT and CREDIT narrative tracking is implied."
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": [
+        "Monthly office rent and utilities payment settlement record",
+        "Client invoice direct wire transfer multi-gateway routing entry",
+        "SaaS cloud infrastructure software subscription renewal fee",
+        "Office stationery, supplies, and equipment purchase ledger audit",
+        "Professional legal and corporate accounting consulting services",
+        "Corporate travel, lodging, and accommodation expense reimbursement",
+        "Marketing campaign digital ad placement fee settlement"
+      ]
     }
   ]
 }

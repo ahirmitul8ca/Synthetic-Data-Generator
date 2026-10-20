@@ -45,6 +45,11 @@ if __name__ == "__main__":
             alias="local-ollama",
             model="llama3",  # <-- Change this to your new model name here
             provider="openai",
+            inference_parameters=dd.ChatCompletionInferenceParams(
+            timeout=300,        # Increase timeout to 300 seconds (5 minutes)
+            
+            max_parallel_requests=2  # Keep local parallel load low
+        )
         )
     ]
 

@@ -50,3 +50,11 @@ def get_target_file_path(prefix, target_folder=None, extension="csv", include_ti
         
     filename = get_timestamped_filename(prefix, extension=extension, include_time=include_time)
     return folder / filename
+
+def create_parquet_timestamped_dir(name: str) -> Path:
+    """Creates a folder using the passed name with hours and minutes appended at the end."""
+    timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M")
+    folder_path = SYNTHETIC_DATA_DIR / Path(f"{name}_{timestamp_str}")
+    folder_path.mkdir(parents=True, exist_ok=True)
+
+    return folder_path
