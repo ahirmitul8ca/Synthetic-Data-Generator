@@ -1,0 +1,280 @@
+{
+  "actual_num_records": 50000,
+  "buffer_size": 1000,
+  "column_statistics": [
+    {
+      "column_name": "payment_id",
+      "column_type": "sampler",
+      "distribution": {
+        "histogram": {
+          "categories": [
+            "pi_99a87b12-c43e-4d81-9f21-110294821033",
+            "pi_77e11c34-99aa-4122-b543-556102938411",
+            "pi_11b88d55-66cc-4833-a123-334920184722",
+            "pi_44f32a89-11ef-49b0-8812-783920194855"
+          ],
+          "counts": [
+            12649,
+            12521,
+            12442,
+            12388
+          ]
+        },
+        "least_common_value": "pi_44f32a89-11ef-49b0-8812-783920194855",
+        "most_common_value": "pi_99a87b12-c43e-4d81-9f21-110294821033"
+      },
+      "distribution_type": "categorical",
+      "num_null": 0,
+      "num_records": 50000,
+      "num_unique": 4,
+      "pyarrow_dtype": "string",
+      "sampler_type": "category",
+      "simple_dtype": "string"
+    },
+    {
+      "column_name": "merchant_id",
+      "column_type": "sampler",
+      "distribution": {
+        "histogram": {
+          "categories": [
+            "merch_alpha_9921",
+            "merch_delta_1109",
+            "merch_beta_4410",
+            "merch_gamma_8832"
+          ],
+          "counts": [
+            12628,
+            12566,
+            12467,
+            12339
+          ]
+        },
+        "least_common_value": "merch_gamma_8832",
+        "most_common_value": "merch_alpha_9921"
+      },
+      "distribution_type": "categorical",
+      "num_null": 0,
+      "num_records": 50000,
+      "num_unique": 4,
+      "pyarrow_dtype": "string",
+      "sampler_type": "category",
+      "simple_dtype": "string"
+    },
+    {
+      "column_name": "routed_to",
+      "column_type": "sampler",
+      "distribution": {
+        "histogram": {
+          "categories": [
+            "Stripe-Gateway-Primary",
+            "Razorpay-Gateway-Primary",
+            "Adyen-Failover-Gateway",
+            "CheckoutCom-Routing-Engine"
+          ],
+          "counts": [
+            12615,
+            12578,
+            12537,
+            12270
+          ]
+        },
+        "least_common_value": "CheckoutCom-Routing-Engine",
+        "most_common_value": "Stripe-Gateway-Primary"
+      },
+      "distribution_type": "categorical",
+      "num_null": 0,
+      "num_records": 50000,
+      "num_unique": 4,
+      "pyarrow_dtype": "string",
+      "sampler_type": "category",
+      "simple_dtype": "string"
+    },
+    {
+      "column_name": "routing_availability_state",
+      "column_type": "sampler",
+      "distribution": {
+        "histogram": {
+          "categories": [
+            "Primary Available (Normal Routing)",
+            "Primary Degraded -> Failover Triggered",
+            "Primary Outage -> Full Failover Routing",
+            "Circuit Breaker Open -> Fallback Queue"
+          ],
+          "counts": [
+            12740,
+            12527,
+            12390,
+            12343
+          ]
+        },
+        "least_common_value": "Circuit Breaker Open -> Fallback Queue",
+        "most_common_value": "Primary Available (Normal Routing)"
+      },
+      "distribution_type": "categorical",
+      "num_null": 0,
+      "num_records": 50000,
+      "num_unique": 4,
+      "pyarrow_dtype": "string",
+      "sampler_type": "category",
+      "simple_dtype": "string"
+    },
+    {
+      "column_name": "outage_reason",
+      "column_type": "sampler",
+      "distribution": {
+        "histogram": {
+          "categories": [
+            "Rate Limit Exceeded (HTTP 429)",
+            "None (Healthy)",
+            "Connection Pool Exhaustion",
+            "TLS Handshake Failure",
+            "HTTP 504 Gateway Timeout"
+          ],
+          "counts": [
+            10096,
+            10090,
+            10008,
+            9908,
+            9898
+          ]
+        },
+        "least_common_value": "HTTP 504 Gateway Timeout",
+        "most_common_value": "Rate Limit Exceeded (HTTP 429)"
+      },
+      "distribution_type": "categorical",
+      "num_null": 0,
+      "num_records": 50000,
+      "num_unique": 5,
+      "pyarrow_dtype": "string",
+      "sampler_type": "category",
+      "simple_dtype": "string"
+    },
+    {
+      "column_name": "retry_attempt_count",
+      "column_type": "sampler",
+      "distribution": {
+        "histogram": {
+          "categories": [
+            "0",
+            "2",
+            "1",
+            "3"
+          ],
+          "counts": [
+            12599,
+            12563,
+            12459,
+            12379
+          ]
+        },
+        "least_common_value": "3",
+        "most_common_value": "0"
+      },
+      "distribution_type": "categorical",
+      "num_null": 0,
+      "num_records": 50000,
+      "num_unique": 4,
+      "pyarrow_dtype": "string",
+      "sampler_type": "category",
+      "simple_dtype": "string"
+    },
+    {
+      "column_name": "journal_description",
+      "column_type": "sampler",
+      "distribution": {
+        "histogram": {
+          "categories": [
+            "Corporate travel, lodging, and accommodation expense reimbursement",
+            "SaaS cloud infrastructure software subscription renewal fee",
+            "Client invoice direct wire transfer multi-gateway routing entry",
+            "Professional legal and corporate accounting consulting services",
+            "Monthly office rent and utilities payment settlement record",
+            "Office stationery, supplies, and equipment purchase ledger audit",
+            "Marketing campaign digital ad placement fee settlement"
+          ],
+          "counts": [
+            7336,
+            7177,
+            7152,
+            7146,
+            7107,
+            7069,
+            7013
+          ]
+        },
+        "least_common_value": "Marketing campaign digital ad placement fee settlement",
+        "most_common_value": "Corporate travel, lodging, and accommodation expense reimbursement"
+      },
+      "distribution_type": "categorical",
+      "num_null": 0,
+      "num_records": 50000,
+      "num_unique": 7,
+      "pyarrow_dtype": "string",
+      "sampler_type": "category",
+      "simple_dtype": "string"
+    }
+  ],
+  "config_hash": "sha256:4d7a9fec984595ff89148ac3c650da0a439c8364e8ab39a91137a7ebf55372ce",
+  "config_hash_algo": "sha256",
+  "config_hash_version": 2,
+  "dataset_name": "double_ledger_output",
+  "file_paths": {
+    "parquet-files": [
+      "parquet-files\\batch_00000.parquet",
+      "parquet-files\\batch_00001.parquet",
+      "parquet-files\\batch_00002.parquet",
+      "parquet-files\\batch_00003.parquet",
+      "parquet-files\\batch_00004.parquet",
+      "parquet-files\\batch_00005.parquet",
+      "parquet-files\\batch_00006.parquet",
+      "parquet-files\\batch_00007.parquet",
+      "parquet-files\\batch_00008.parquet",
+      "parquet-files\\batch_00009.parquet",
+      "parquet-files\\batch_00010.parquet",
+      "parquet-files\\batch_00011.parquet",
+      "parquet-files\\batch_00012.parquet",
+      "parquet-files\\batch_00013.parquet",
+      "parquet-files\\batch_00014.parquet",
+      "parquet-files\\batch_00015.parquet",
+      "parquet-files\\batch_00016.parquet",
+      "parquet-files\\batch_00017.parquet",
+      "parquet-files\\batch_00018.parquet",
+      "parquet-files\\batch_00019.parquet",
+      "parquet-files\\batch_00020.parquet",
+      "parquet-files\\batch_00021.parquet",
+      "parquet-files\\batch_00022.parquet",
+      "parquet-files\\batch_00023.parquet",
+      "parquet-files\\batch_00024.parquet",
+      "parquet-files\\batch_00025.parquet",
+      "parquet-files\\batch_00026.parquet",
+      "parquet-files\\batch_00027.parquet",
+      "parquet-files\\batch_00028.parquet",
+      "parquet-files\\batch_00029.parquet",
+      "parquet-files\\batch_00030.parquet",
+      "parquet-files\\batch_00031.parquet",
+      "parquet-files\\batch_00032.parquet",
+      "parquet-files\\batch_00033.parquet",
+      "parquet-files\\batch_00034.parquet",
+      "parquet-files\\batch_00035.parquet",
+      "parquet-files\\batch_00036.parquet",
+      "parquet-files\\batch_00037.parquet",
+      "parquet-files\\batch_00038.parquet",
+      "parquet-files\\batch_00039.parquet",
+      "parquet-files\\batch_00040.parquet",
+      "parquet-files\\batch_00041.parquet",
+      "parquet-files\\batch_00042.parquet",
+      "parquet-files\\batch_00043.parquet",
+      "parquet-files\\batch_00044.parquet",
+      "parquet-files\\batch_00045.parquet",
+      "parquet-files\\batch_00046.parquet",
+      "parquet-files\\batch_00047.parquet",
+      "parquet-files\\batch_00048.parquet",
+      "parquet-files\\batch_00049.parquet"
+    ]
+  },
+  "num_completed_batches": 50,
+  "original_target_num_records": 50000,
+  "preserve_dropped_columns": true,
+  "target_num_records": 50000,
+  "total_num_batches": 50
+}

@@ -9,7 +9,6 @@ env/
 venv/
 
 # Generated Outputs & Data
-Synthetic_Data/
 exports/
 data/
 archive/
