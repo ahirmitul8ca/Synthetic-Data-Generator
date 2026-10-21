@@ -83,6 +83,4 @@ Keep dataset-specific settings (row counts, rates, reference data) inside the ge
 
 Run commands from the repository root (`python run.py ...`), not from inside `generators/`, so the shared modules can be imported.
 
-## License
 
-Add your preferred license here (for example, MIT).
