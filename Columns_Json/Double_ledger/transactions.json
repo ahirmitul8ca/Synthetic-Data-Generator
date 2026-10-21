@@ -3,17 +3,11 @@
   "columns": [
     {
       "name": "ledger_line_id",
-      "type": "sequence",
-      "prefix": "LIN-",
-      "start": 100001,
-      "step": 1
+      "type": "uuid"
     },
     {
       "name": "payment_intent_id",
-      "type": "sequence",
-      "prefix": "TXN-",
-      "start": 500001,
-      "step": 1
+      "type": "uuid"
     },
     {
       "name": "merchant_id",
