@@ -1,0 +1,4 @@
+data-designer
+pandas
+numpy
+pyarrow

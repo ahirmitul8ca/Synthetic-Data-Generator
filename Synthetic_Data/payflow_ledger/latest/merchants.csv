@@ -1,0 +1,13 @@
+merchant_id,merchant_name,country_code,currency,risk_tier,industry_category,onboarded_at
+MCH-9921-US,Acme Cloud Services Corp,US,USD,LOW,SaaS & Technology,2023-01-15
+MCH-4410-GB,Global Office Supplies Inc,GB,GBP,LOW,Office Supplies,2023-03-02
+MCH-8832-CA,Metro Utilities & Power,CA,CAD,MEDIUM,Utilities & Infrastructure,2023-06-20
+MCH-1109-AU,Apex Legal & Accounting Partners,AU,AUD,LOW,Professional Services,2023-09-10
+MCH-5542-DE,Prime Logistics & Freight,DE,EUR,MEDIUM,Logistics & Freight,2023-11-05
+MCH-3318-FR,Vanguard Tech Solutions,FR,EUR,LOW,SaaS & Technology,2024-01-18
+MCH-7790-JP,Horizon Global Enterprise,JP,JPY,MEDIUM,Professional Services,2024-03-25
+MCH-2245-SG,Pacific Rim Holdings,SG,SGD,HIGH,Professional Services,2024-05-12
+MCH-6612-NL,Nordic Digital Services,NL,EUR,LOW,SaaS & Technology,2024-07-30
+MCH-1184-SE,Meridian Logistics Group,SE,SEK,MEDIUM,Logistics & Freight,2024-09-14
+MCH-9933-BR,Cordillera Trading Co,BR,BRL,HIGH,Office Supplies,2024-11-02
+MCH-4477-MX,Aztec Financial Systems,MX,MXN,HIGH,Professional Services,2024-12-10

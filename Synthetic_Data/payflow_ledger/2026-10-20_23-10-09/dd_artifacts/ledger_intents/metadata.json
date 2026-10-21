@@ -1,0 +1,173 @@
+{
+  "actual_num_records": 27000,
+  "buffer_size": 1000,
+  "column_statistics": [
+    {
+      "column_name": "merchant_id",
+      "column_type": "sampler",
+      "distribution": {
+        "histogram": {
+          "categories": [
+            "MCH-4477-MX",
+            "MCH-1109-AU",
+            "MCH-3318-FR",
+            "MCH-4410-GB",
+            "MCH-1184-SE",
+            "MCH-5542-DE",
+            "MCH-7790-JP",
+            "MCH-2245-SG",
+            "MCH-8832-CA",
+            "MCH-6612-NL",
+            "MCH-9933-BR",
+            "MCH-9921-US"
+          ],
+          "counts": [
+            2331,
+            2314,
+            2288,
+            2271,
+            2268,
+            2267,
+            2258,
+            2243,
+            2210,
+            2202,
+            2174,
+            2174
+          ]
+        },
+        "least_common_value": "MCH-9921-US",
+        "most_common_value": "MCH-4477-MX"
+      },
+      "distribution_type": "categorical",
+      "num_null": 0,
+      "num_records": 27000,
+      "num_unique": 12,
+      "pyarrow_dtype": "string",
+      "sampler_type": "category",
+      "simple_dtype": "string"
+    },
+    {
+      "column_name": "amount",
+      "column_type": "sampler",
+      "distribution": {
+        "max": 4999.01,
+        "mean": 2518.77,
+        "median": 2527.31,
+        "min": 10.02,
+        "stddev": 1448.62
+      },
+      "distribution_type": "numerical",
+      "num_null": 0,
+      "num_records": 27000,
+      "num_unique": 27000,
+      "pyarrow_dtype": "double",
+      "sampler_type": "uniform",
+      "simple_dtype": "float"
+    },
+    {
+      "column_name": "status",
+      "column_type": "sampler",
+      "distribution": {
+        "histogram": {
+          "categories": [
+            "succeeded",
+            "pending",
+            "requires_capture"
+          ],
+          "counts": [
+            22952,
+            2718,
+            1330
+          ]
+        },
+        "least_common_value": "requires_capture",
+        "most_common_value": "succeeded"
+      },
+      "distribution_type": "categorical",
+      "num_null": 0,
+      "num_records": 27000,
+      "num_unique": 3,
+      "pyarrow_dtype": "string",
+      "sampler_type": "category",
+      "simple_dtype": "string"
+    },
+    {
+      "column_name": "routed_to",
+      "column_type": "sampler",
+      "distribution": {
+        "histogram": {
+          "categories": [
+            "PayPal-Braintree-Gateway",
+            "CheckoutCom-Routing-Engine",
+            "Worldpay-Global-Processor",
+            "Mollie-European-Routing",
+            "Stripe-Gateway-Primary",
+            "AuthorizeNet-Payment-Hub",
+            "Razorpay-Gateway-Primary",
+            "Adyen-Failover-Gateway"
+          ],
+          "counts": [
+            3453,
+            3442,
+            3400,
+            3392,
+            3371,
+            3366,
+            3319,
+            3257
+          ]
+        },
+        "least_common_value": "Adyen-Failover-Gateway",
+        "most_common_value": "PayPal-Braintree-Gateway"
+      },
+      "distribution_type": "categorical",
+      "num_null": 0,
+      "num_records": 27000,
+      "num_unique": 8,
+      "pyarrow_dtype": "string",
+      "sampler_type": "category",
+      "simple_dtype": "string"
+    }
+  ],
+  "config_hash": "sha256:4393f36f78c7532e6226d010995d05cf85a518a9fe6f4a7c732358e7ca1cea20",
+  "config_hash_algo": "sha256",
+  "config_hash_version": 2,
+  "dataset_name": "ledger_intents",
+  "file_paths": {
+    "parquet-files": [
+      "parquet-files\\batch_00000.parquet",
+      "parquet-files\\batch_00001.parquet",
+      "parquet-files\\batch_00002.parquet",
+      "parquet-files\\batch_00003.parquet",
+      "parquet-files\\batch_00004.parquet",
+      "parquet-files\\batch_00005.parquet",
+      "parquet-files\\batch_00006.parquet",
+      "parquet-files\\batch_00007.parquet",
+      "parquet-files\\batch_00008.parquet",
+      "parquet-files\\batch_00009.parquet",
+      "parquet-files\\batch_00010.parquet",
+      "parquet-files\\batch_00011.parquet",
+      "parquet-files\\batch_00012.parquet",
+      "parquet-files\\batch_00013.parquet",
+      "parquet-files\\batch_00014.parquet",
+      "parquet-files\\batch_00015.parquet",
+      "parquet-files\\batch_00016.parquet",
+      "parquet-files\\batch_00017.parquet",
+      "parquet-files\\batch_00018.parquet",
+      "parquet-files\\batch_00019.parquet",
+      "parquet-files\\batch_00020.parquet",
+      "parquet-files\\batch_00021.parquet",
+      "parquet-files\\batch_00022.parquet",
+      "parquet-files\\batch_00023.parquet",
+      "parquet-files\\batch_00024.parquet",
+      "parquet-files\\batch_00025.parquet",
+      "parquet-files\\batch_00026.parquet"
+    ]
+  },
+  "num_completed_batches": 27,
+  "original_target_num_records": 27000,
+  "preserve_dropped_columns": true,
+  "target_num_records": 27000,
+  "total_num_batches": 27
+}
