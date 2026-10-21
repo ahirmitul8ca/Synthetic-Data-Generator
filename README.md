@@ -1,94 +1,16 @@
-# Synthetic-Data-Generator
+# Synthetic Data Generator
 
+A small toolkit for building realistic, internally consistent synthetic datasets with **NVIDIA NeMo Data Designer** and **pandas/numpy**. Each dataset is one self-contained script in `generators/`; shared code (folders, logging, UUIDs, timestamps, saving) lives in `helpers.py` and `File_Manager.py`.
 
-A Python generator that builds a realistic, internally consistent **payments platform dataset with a double-entry ledger**. It uses **NVIDIA NeMo Data Designer** for the random columns and **pandas/numpy** for the business rules, and it is designed as the source data for an analytics engineering project (dbt, BigQuery, Power BI).
+All data is synthetic. No real customer or financial data is used.
 
-No real customer or financial data is used. Everything is synthetic.
+## Datasets
 
-## Why this project exists
-
-Public payments data is hard to find, and real data cannot be shared. This generator produces a dataset that behaves like a real payment platform, so you can practice and demonstrate:
-
-- Data modeling (staging, dimensions, facts, marts)
-- Data quality testing (duplicates, nulls, balance checks)
-- Financial reconciliation (ledger versus settlements)
-- Operational analytics (gateway success rates, failure reasons, merchant risk)
-
-## What it generates
-
-| Table | Rows (approx.) | Description |
+| Generator | Description | Docs |
 |---|---|---|
-| `accounts` | 10 | Chart of accounts with account type and normal balance |
-| `merchants` | 12 | Merchants across 12 countries with risk tier, currency and onboarding date |
-| `payment_intents` | 27,000 | Every payment attempt, including failed ones with a failure reason |
-| `ledger` | 52,000 | Double-entry lines (one DEBIT and one CREDIT per posted payment or refund) |
-| `settlements` | 2,000 | Merchant payouts on a schedule based on risk tier |
+| `payflow_ledger` | Payments platform with a double-entry ledger, refunds, failed payments and risk-based settlements (5 tables) | [docs/payflow_ledger.md](docs/payflow_ledger.md) |
 
-Each table is saved as **Parquet and CSV**.
-
-### Data model
-
-```mermaid
-erDiagram
-    MERCHANTS ||--o{ PAYMENT_INTENTS : makes
-    MERCHANTS ||--o{ SETTLEMENTS : receives
-    PAYMENT_INTENTS ||--o{ LEDGER : "posts as 2 lines"
-    PAYMENT_INTENTS ||--o{ LEDGER : "refund points back"
-    ACCOUNTS ||--o{ LEDGER : "debited / credited"
-```
-
-## How realistic is it?
-
-- **Double-entry bookkeeping:** every payment or refund creates exactly one DEBIT and one CREDIT line of equal amount, so each entry nets to zero.
-- **Failures that make sense:** failure rates differ by payment gateway (about 2% to 12%) and rise for high-risk merchants. Failure reasons depend on the gateway and risk (for example, the flakiest gateway has far more timeouts, high-risk merchants have more fraud blocks).
-- **Time patterns:** about 12 months of history, quieter weekends, busier month ends, and posting delays that depend on payment status.
-- **Refunds:** about 3% of succeeded payments get a full or partial refund 1 to 30 days later, linked to the original payment.
-- **Risk-based settlements:** low-risk merchants settle daily, medium-risk weekly, and high-risk monthly with 10% held back as a reserve. A small share of payouts fail, and the open period is pending.
-- **Multi-currency:** each merchant has its own currency (USD, GBP, CAD, AUD, EUR, JPY, SGD, SEK, BRL, MXN).
-- **Deliberate data quality issues:** the saved ledger contains about 0.5% exact duplicate rows and about 0.3% null gateway values, so downstream data tests have real problems to catch. This can be switched off.
-
-## How it works
-
-```mermaid
-flowchart LR
-    A[Reference tables<br/>accounts, merchants] --> B[Data Designer<br/>random payment attempts]
-    B --> C[pandas rules<br/>failures, timestamps, currency]
-    C --> D[Ledger lines<br/>refunds, debit/credit pairs]
-    C --> E[Settlements<br/>risk-based schedule]
-    D --> F[Validation]
-    E --> F
-    F --> G[Inject issues<br/>duplicates, nulls]
-    G --> H[Parquet + CSV output]
-```
-
-1. Fixed reference tables are defined in code, so ids, names, countries and currencies always match.
-2. NeMo Data Designer generates the independent random columns of each payment attempt (merchant, amount, status, gateway).
-3. pandas and numpy apply everything that depends on other columns: failures by gateway and risk, timestamps, currency from the merchant, `amount_cents` derived from `amount`, refunds, debit/credit pairs and settlements.
-4. A validation step checks the clean data and stops the script if anything is wrong.
-5. Optional issues are injected into the ledger, then every table is saved.
-
-## Project structure
-
-```
-.
-├── Double_Ledger_Gen.py    # main generator
-├── File_Manager.py         # paths, directory creation, timestamped run folders
-├── Synthetic_Data/         # output (git-ignored)
-│   ├── double_ledger_<timestamp>/    # one folder per run
-│   └── latest/                       # most recent run, stable file names
-├── logs/                   # run logs (git-ignored)
-├── README.md
-└── .gitignore
-```
-
-## Getting started
-
-### Requirements
-- Python 3.10 or newer
-- NVIDIA NeMo Data Designer (install it following the [official documentation](https://docs.nvidia.com/nemo/datadesigner/))
-- `pandas`, `numpy`, `pyarrow`
-
-### Setup
+## Quick start
 
 ```bash
 python -m venv .venv
@@ -97,72 +19,70 @@ python -m venv .venv
 # macOS / Linux
 source .venv/bin/activate
 
-pip install pandas numpy pyarrow
-# then install NeMo Data Designer as described in its documentation
+pip install -r requirements.txt     # data-designer, pandas, numpy, pyarrow (Python 3.10 to 3.13)
+
+python run.py                       # list available generators
+python run.py payflow_ledger        # run one
 ```
 
-### Run
+If Data Designer complains about missing model providers or models (even though the ledger generator uses no LLM columns), set them up once:
 
 ```bash
-python Double_Ledger_Gen.py
+data-designer config providers      # configure a model provider
+data-designer config models         # configure model settings
+data-designer config list           # view current settings
 ```
 
-Output appears in `Synthetic_Data/double_ledger_<timestamp>/` and in `Synthetic_Data/latest/`. A log is written to `logs/double_ledger_gen.log`.
+Output goes to `Synthetic_Data/<dataset>/<timestamp>/` (one folder per run) and `Synthetic_Data/<dataset>/latest/` (always the newest run). Every table is saved as Parquet and CSV. Logs go to `logs/<dataset>.log`.
 
-## Configuration
+## Repository structure
 
-All settings are constants at the top of `Double_Ledger_Gen.py`.
+```
+.
+├── run.py                  # entry point: python run.py <generator>
+├── File_Manager.py         # paths, run folders, "latest" folders
+├── requirements.txt
+├── helpers.py              # logging, uuids, timestamps, validation helper, save_table
+├── generators/
+│   ├── __init__.py
+│   └── payflow_ledger.py   # one script per dataset
+├── docs/
+│   ├── payflow_ledger.md   # dataset documentation
+│   └── Synthetic_Data_Playbook.md   # techniques and lessons, reusable for new datasets
+├── Synthetic_Data/         # generated output (git-ignored)
+└── logs/                   # run logs (git-ignored)
+```
 
-| Setting | Default | Meaning |
-|---|---|---|
-| `SEED` | 42 | Seed for the pandas/numpy randomness |
-| `TARGET_PAYMENT_INTENTS` | 27,000 | Number of payment attempts, failed included |
-| `HISTORY_DAYS` | 365 | Length of the history window |
-| `REFUND_RATE` | 0.03 | Share of succeeded payments that are refunded |
-| `FEE_RATE` | 0.029 | Platform fee in each settlement |
-| `GATEWAY_FAILURE_RATE` | 2% to 12% | Failure chance per gateway |
-| `RISK_FAILURE_MULTIPLIER` | 0.8 / 1.0 / 1.6 | Failure multiplier by merchant risk tier |
-| `SETTLEMENT_SCHEDULE` | daily / weekly / monthly | Settlement schedule by risk tier |
-| `RESERVE_RATE` | 0% / 0% / 10% | Share of net held back per schedule |
-| `INJECT_ISSUES` | True | Add duplicates and null gateways to the ledger |
+## Adding a new dataset
 
-To change the reference data (accounts, merchants, descriptions, gateways, posting rules), edit the lists at the top of the file.
+1. Create `generators/<name>.py` with a `main()` function.
+2. In it, set `DATASET_NAME = "<name>"` and use the shared helpers:
 
-## Validation
+```python
+from File_Manager import create_parquet_timestamped_dir, ensure_directories, get_latest_dir
+from helpers import new_uuid, raise_if_problems, random_timestamps, save_table, setup_logging
 
-Before anything is saved, the script checks that:
+DATASET_NAME = "my_dataset"
+logger = logging.getLogger(DATASET_NAME)
 
-- primary keys are unique in every table
-- every ledger row points to an existing merchant and account
-- there are no unexpected nulls
-- `amount_cents` always equals `amount` times 100
-- `posted_at` is never earlier than `created_at`, and nothing happens before a merchant's onboarding date
-- every ledger entry balances to zero
-- every ledger payment exists in `payment_intents`, and no failed payment is in the ledger
-- every refund points to a real payment
-- `failure_reason` appears only on failed attempts
-- total settlement gross equals succeeded payments in the ledger
+def main() -> None:
+    ensure_directories()
+    setup_logging(DATASET_NAME)
+    run_dir = create_parquet_timestamped_dir(DATASET_NAME)
+    latest_dir = get_latest_dir(DATASET_NAME)
+    ...  # build tables, validate, then:
+    save_table(df, "my_table", run_dir, latest_dir)
+```
 
-If any check fails, the script stops with a list of problems.
+3. Run it with `python run.py <name>`. It shows up in the generator list automatically.
+4. Add a docs page in `docs/` and a row in the table above.
 
-## Planned next steps
+Keep dataset-specific settings (row counts, rates, reference data) inside the generator. Only put code in `helpers.py` if at least two datasets need it. Read `docs/Synthetic_Data_Playbook.md` for the design pattern (reference tables, Data Designer for random columns, pandas for rules, validation, injected issues) and the pitfalls to avoid.
 
-- Load the tables into BigQuery and build a dbt project:
-  - staging models (including deduplication of the ledger)
-  - dimensions and facts
-  - marts: daily merchant revenue, gateway success rate, trial balance, settlement reconciliation, merchant risk
-  - tests, including a custom test that every payment balances to zero
-  - a snapshot of merchant risk tier changes
-- Build a Power BI dashboard on top of the marts.
-- Release held reserves after a delay, and post reserve movements to the ledger.
-- Make amounts and time of day more realistic (many small payments, activity peaking in business hours).
+## Run generators from the repo root
 
-## Known limitations
+Run commands from the repository root (`python run.py ...`), not from inside `generators/`, so the shared modules can be imported.
 
-- Reference data is small and fixed (10 accounts, 12 merchants).
-- Amounts are uniformly distributed between 10 and 5,000 and time of day is uniform, which is less realistic than real traffic.
-- The Data Designer columns (merchant, amount, status, gateway) are not tied to `SEED`, so those values can differ between runs. Everything generated in pandas/numpy is seeded.
-- JPY has no minor unit, so `amount_cents` is not strictly correct for it.
-- The posting rules (which accounts are debited and credited) are simplified placeholders.
-- Data Designer API details such as where `artifact_path` is passed may need small adjustments depending on the installed version.
+## License
 
+Add your preferred license here (for example, MIT).
