@@ -1,0 +1,37 @@
+{
+  "num_records": 10,
+  "columns": [
+    {
+      "name": "journal_entry_id",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": [
+        "JNL-908123-A",
+        "JNL-443211-B",
+        "JNL-778899-C",
+        "JNL-554433-D"
+      ]
+    },
+    {
+      "name": "description",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": [
+        "Monthly office rent and utilities payment settlement record",
+        "Client invoice direct wire transfer multi-gateway routing entry",
+        "SaaS cloud infrastructure software subscription renewal fee",
+        "Office stationery, supplies, and equipment purchase ledger audit",
+        "Professional legal and corporate accounting consulting services"
+      ]
+    },
+    {
+      "name": "payment_intent_id",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": [
+        "TXN-99a87b12-91",
+        "TXN-44f32a89-44"
+      ]
+    }
+  ]
+}

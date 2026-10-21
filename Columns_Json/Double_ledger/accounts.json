@@ -1,0 +1,50 @@
+{
+  "num_records": 10,
+  "columns": [
+    {
+      "name": "account_id",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": [
+        "ACT-ROOT-001",
+        "ACT-CLR-002",
+        "ACT-REC-003",
+        "ACT-FEE-004"
+      ]
+    },
+    {
+      "name": "owner_id",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": [
+        "MCH-9921-US",
+        "MCH-4410-GB",
+        "MCH-8832-CA",
+        "MCH-1109-AU"
+      ]
+    },
+    {
+      "name": "name",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": [
+        "Main Operating Checking Account",
+        "Gateway Clearing Settlement Account",
+        "Merchant Accounts Receivable",
+        "Platform Service Fee Account"
+      ]
+    },
+    {
+      "name": "currency",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": ["USD", "EUR", "GBP"]
+    },
+    {
+      "name": "balance",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": ["154320.50", "89400.12", "1250000.00", "45200.75"]
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "num_records": 10,
+  "columns": [
+    {
+      "name": "merchant_id",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": [
+        "MCH-9921-US",
+        "MCH-4410-GB",
+        "MCH-8832-CA",
+        "MCH-1109-AU"
+      ]
+    },
+    {
+      "name": "merchant_name",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": [
+        "Alpha Global Electronics Inc.",
+        "Beta Cloud SaaS Solutions",
+        "Gamma Digital Media & Ads",
+        "Delta Retail & Logistics Corp."
+      ]
+    },
+    {
+      "name": "business_category",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": [
+        "E-Commerce & Retail",
+        "Software & Subscriptions",
+        "Digital Advertising",
+        "Professional Services"
+      ]
+    },
+    {
+      "name": "country",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": ["USA", "GBR", "CAN", "AUS"]
+    },
+    {
+      "name": "risk_tier",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": ["LOW", "MEDIUM", "HIGH"]
+    }
+  ]
+}

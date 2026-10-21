@@ -16,6 +16,7 @@ DATA_DIR = Path(os.getenv("HOST_DATA_PATH", BASE_DIR / "data"))
 ARCHIVE_DIR = Path(os.getenv("HOST_ARCHIVE_PATH", BASE_DIR / "archive"))
 SCHEMAS_DIR = Path(os.getenv("HOST_SCHEMAS_PATH", BASE_DIR / "Columns_Json"))
 SYNTHETIC_DATA_DIR = Path(os.getenv("HOST_SYNTHETIC_DATA_PATH", BASE_DIR / "Synthetic_Data"))
+Double_Ledger_Schema_DIR = SCHEMAS_DIR / "Double_Ledger"
 
 
 def ensure_directories(dir_list=None):
