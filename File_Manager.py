@@ -1,61 +1,64 @@
-import os
+"""
+File_Manager.py
+
+Shared paths and folder helpers for every generator in this repo.
+
+Output layout:
+    Synthetic_Data/<dataset>/<YYYY-MM-DD_HH-MM-SS>/   one folder per run
+    Synthetic_Data/<dataset>/latest/                  most recent run, stable file names
+"""
 import logging
-import shutil
-from pathlib import Path
+import os
 from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# Base directory is strictly the folder where File_Manager.py lives ("Synthetic Data Generator")
+# Base directory is the folder where File_Manager.py lives (the repo root)
 BASE_DIR = Path(__file__).resolve().parent
 
-# Explicitly map directories using absolute relative paths
+# Every path can be overridden with an environment variable
 LOGS_DIR = Path(os.getenv("HOST_LOGS_PATH", BASE_DIR / "logs"))
 EXPORTS_DIR = Path(os.getenv("HOST_EXPORTS_PATH", BASE_DIR / "exports"))
 DATA_DIR = Path(os.getenv("HOST_DATA_PATH", BASE_DIR / "data"))
 ARCHIVE_DIR = Path(os.getenv("HOST_ARCHIVE_PATH", BASE_DIR / "archive"))
-SCHEMAS_DIR = Path(os.getenv("HOST_SCHEMAS_PATH", BASE_DIR / "Columns_Json"))
 SYNTHETIC_DATA_DIR = Path(os.getenv("HOST_SYNTHETIC_DATA_PATH", BASE_DIR / "Synthetic_Data"))
-Double_Ledger_Schema_DIR = SCHEMAS_DIR / "Double_Ledger"
+GENERATORS_DIR = BASE_DIR / "generators"
 
 
-def ensure_directories(dir_list=None):
-    """Creates necessary folders if they don't exist using os.path.exists checks."""
+def ensure_directories(dir_list=None) -> None:
+    """Create the standard folders if they don't exist."""
     if dir_list is None:
-        dir_list = [LOGS_DIR, EXPORTS_DIR, DATA_DIR, ARCHIVE_DIR, SYNTHETIC_DATA_DIR, SCHEMAS_DIR]
-    
+        dir_list = [LOGS_DIR, EXPORTS_DIR, DATA_DIR, ARCHIVE_DIR, SYNTHETIC_DATA_DIR]
     for directory in dir_list:
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-            logger.info(f"Directory Created: {directory}")
-        else:
-            logger.debug(f"Directory already exists: {directory}")
+        Path(directory).mkdir(parents=True, exist_ok=True)
+        logger.debug("Ensured directory: %s", directory)
 
 
-def get_timestamped_filename(prefix, extension="csv", include_time=False):
-    """Generates a filename with precise timestamps."""
-    if include_time:
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    else:
-        timestamp = datetime.now().strftime("%Y-%m-%d")
-    return f"{prefix}_{timestamp}.{extension}"
+def get_timestamped_filename(prefix: str, extension: str = "csv", include_time: bool = False) -> str:
+    """Generate a filename with a timestamp, e.g. report_2026-10-21.csv"""
+    fmt = "%Y-%m-%d_%H-%M-%S" if include_time else "%Y-%m-%d"
+    return f"{prefix}_{datetime.now().strftime(fmt)}.{extension}"
 
 
-def get_target_file_path(prefix, target_folder=None, extension="csv", include_time=False):
-    """Returns a fully resolved file path inside a target folder with a timestamp."""
+def get_target_file_path(prefix: str, target_folder=None, extension: str = "csv",
+                         include_time: bool = False) -> Path:
+    """Return a full file path inside a folder, with a timestamped name."""
     folder = Path(target_folder) if target_folder else SYNTHETIC_DATA_DIR
-    
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-        logger.info(f"Directory Created: {folder}")
-        
-    filename = get_timestamped_filename(prefix, extension=extension, include_time=include_time)
-    return folder / filename
+    folder.mkdir(parents=True, exist_ok=True)
+    return folder / get_timestamped_filename(prefix, extension, include_time)
 
-def create_parquet_timestamped_dir(name: str) -> Path:
-    """Creates a folder using the passed name with hours and minutes appended at the end."""
-    timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M")
-    folder_path = SYNTHETIC_DATA_DIR / Path(f"{name}_{timestamp_str}")
+
+def create_parquet_timestamped_dir(dataset_name: str) -> Path:
+    """Create Synthetic_Data/<dataset_name>/<timestamp>/ for one run (seconds avoid collisions)."""
+    timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    folder_path = SYNTHETIC_DATA_DIR / dataset_name / timestamp_str
     folder_path.mkdir(parents=True, exist_ok=True)
+    return folder_path
 
+
+def get_latest_dir(dataset_name: str) -> Path:
+    """Create and return Synthetic_Data/<dataset_name>/latest/ (per dataset, never shared)."""
+    folder_path = SYNTHETIC_DATA_DIR / dataset_name / "latest"
+    folder_path.mkdir(parents=True, exist_ok=True)
     return folder_path

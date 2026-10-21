@@ -1,39 +1,177 @@
-"""
-Double_Ledger_Gen.py
+/
+Planning how to restructure a multi-dataset generator repository.
+Planning how to restructure a multi-dataset generator repository.
 
+Yes, you can. A good setup is one repo with a shared core and one folder per dataset, so each new project adds a new script and reuses the rest.
+
+Suggested structure
+
+synthetic-data-generator/
+├── File_Manager.py            # shared: paths, run folders, logging
+├── helpers.py                 # shared: new_uuid, random_timestamps, save_table, etc.
+├── run.py                     # entry point: python run.py payflow_ledger
+├── generators/
+│   ├── __init__.py
+│   ├── payflow_ledger.py      # your current Double_Ledger_Gen.py
+│   └── next_project.py        # the new one
+├── docs/
+│   ├── PayFlow_Ledger.md
+│   └── Synthetic_Data_Playbook.md
+├── Synthetic_Data/            # git-ignored
+│   ├── payflow_ledger/
+│   │   ├── 2026-10-21_14-30-05/
+│   │   └── latest/
+│   └── next_project/...
+└── README.md                  # overview of the whole repo, links to each dataset
+
+What to change
+
+    Make latest per dataset. Right now Synthetic_Data/latest/ is shared, so two projects with a table named ledger or customers would overwrite each other. In your generator, use:
+
+python
+
+latest_dir = SYNTHETIC_DATA_DIR / "payflow_ledger" / "latest"
+
+and in File_Manager.py, have the run folder live under the dataset name:
+python
+
+def create_parquet_timestamped_dir(name: str) -> Path:
+    timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    folder_path = SYNTHETIC_DATA_DIR / name / timestamp_str
+    folder_path.mkdir(parents=True, exist_ok=True)
+    return folder_path
+
+    Give every generator a main() (yours already has one). Each generator is then a module with the same shape.
+    Add a small run.py so you pick a dataset by name:
+
+python
+
+import sys
+from importlib import import_module
+
+def main():
+    if len(sys.argv) != 2:
+        raise SystemExit("Usage: python run.py <generator_name>")
+    module = import_module(f"generators.{sys.argv[1]}")
+    module.main()
+
+if __name__ == "__main__":
+    main()
+
+Run it with python run.py payflow_ledger. Remember the empty generators/__init__.py.
+
+    Move the shared helpers into helpers.py. new_uuid, random_timestamps, the save function and the generic parts of validate are not ledger-specific. The reference tables, posting rules and domain logic stay in each generator.
+
+Same repo or separate repos?
+	One repo	Separate repos
+Reuse	Shared code is in one place	Copy and paste, which drifts
+Portfolio	Looks like a toolkit	Each project stands alone
+Complexity	A little more structure	Simple, but duplicated
+Best when	Projects share techniques	Projects are unrelated
+
+Since all your projects will use the same approach, I’d go with one repo, and keep the dbt and Power BI work in its own repo that only consumes the generated data.
+
+A few cautions
+
+    Put each dataset’s settings (row counts, rates) inside its own generator, not in shared files.
+    Keep a short markdown file per dataset in docs/, and link it from the main README.
+    Add Synthetic_Data/ to .gitignore so generated data from many projects doesn’t bloat the repo.
+
+I can do the restructuring for you now: split out helpers.py, update File_Manager.py, add run.py, and rename the ledger script to generators/payflow_ledger.py. Want me to?
+
+yes :
+I can do the restructuring for you now: split out helpers.py, update File_Manager.py, add run.py, and rename the ledger script to generators/payflow_ledger.py. Want me to?
+Ran 4 commands, shared files
+
+I’ve restructured the project. The zip (synthetic-data-generator.zip) has the full repo, and I’ve also attached the four code files. I ran the whole pipeline end to end with a stand-in for Data Designer, and it produced all five tables in the new folder layout. It could not exercise the Data Designer calls themselves.
+
+What’s in the zip
+
+synthetic-data-generator/
+├── run.py                       # python run.py <generator>
+├── File_Manager.py              # updated (see below)
+├── helpers.py                   # new: shared code
+├── generators/
+│   ├── __init__.py
+│   └── payflow_ledger.py        # your old Double_Ledger_Gen.py
+├── docs/
+│   ├── payflow_ledger.md        # the ledger README, moved here
+│   └── Synthetic_Data_Playbook.md
+├── README.md                    # new overview of the whole repo
+└── .gitignore
+
+What changed
+
+    File_Manager.py:
+        Output now goes to Synthetic_Data/<dataset>/<timestamp>/, with seconds in the timestamp.
+        A new get_latest_dir(dataset) gives each dataset its own latest folder, so two projects can’t overwrite each other.
+        ensure_directories() is tidier.
+        I removed the schema folder constants, since nothing reads the old JSON files anymore. If your ot_folder scripts import them, those scripts will break.
+    helpers.py: setup_logging, new_uuid, random_timestamps (now takes a start and end date), raise_if_problems and save_table, moved out of the ledger script.
+    run.py: python run.py lists the generators, and python run.py payflow_ledger runs one. New generators appear automatically.
+    generators/payflow_ledger.py: the same logic, now importing the shared helpers.
+    Docs: the top-level README explains how to add a new dataset, and docs/payflow_ledger.md holds the ledger details.
+
+How to apply it
+
+    Unzip it over your project folder, or copy the files in.
+    Delete Double_Ledger_Gen.py, Convert_To_Csv.py and Columns_Json/, and move ot_folder to old_experiments/.
+    Run python run.py payflow_ledger from the repo root, not from inside generators/.
+
+I fixed one inaccurate line in the generator’s docstring, which claimed runs were fully reproducible. It now says the Data Designer columns aren’t seeded.
+
+To add your next dataset, create generators/<name>.py with a main() and follow the “Adding a new dataset” section in the README. If your first run throws a Data Designer error, paste it here.
+Synthetic data generator
+ZIP 
+Payflow ledger
+PY 
+Helpers
+PY 
+File manager
+PY 
+Run
+PY 
+You’ve used 90% of your session limit
+
+
+Claude is AI and can make mistakes.
+Payflow ledger · PY
+"""
+generators/payflow_ledger.py   (run with: python run.py payflow_ledger)
+ 
 Generates five related synthetic tables for a payments platform:
   1. accounts     - chart of accounts (account_type, normal_balance)
   2. merchants    - merchant list (onboarded_at, risk_tier, currency)
   3. payment_intents - every payment attempt, INCLUDING failed ones (failure_reason)
   4. ledger       - double-entry lines for payments that posted, plus refunds, optional messy rows
   5. settlements  - merchant payouts on a risk-based schedule, built from the clean ledger
-
+ 
 Reference tables are defined in code so ids, names, countries and currencies
 always match. NeMo Data Designer generates the random columns of each payment
 intent; pandas/numpy then add the business rules (timestamps, currency from
 merchant, amount_cents derived from amount, one debit + one credit per entry).
-
-The run is reproducible: change SEED for a different dataset.
+ 
+SEED drives everything done in pandas/numpy. The four Data Designer columns
+(merchant, amount, status, gateway) are not tied to it, so they can differ between runs.
 """
 import logging
 import random
-import shutil
-import uuid
-
+ 
 import numpy as np
 import pandas as pd
 import data_designer.config as dd
 from data_designer.interface import DataDesigner
-
+ 
 from File_Manager import (
-    LOGS_DIR,
-    SYNTHETIC_DATA_DIR,
     create_parquet_timestamped_dir,
     ensure_directories,
+    get_latest_dir,
 )
-
-logger = logging.getLogger("double_ledger_gen")
-
+from helpers import new_uuid, raise_if_problems, random_timestamps, save_table, setup_logging
+ 
+DATASET_NAME = "payflow_ledger"
+logger = logging.getLogger(DATASET_NAME)
+ 
 # ---------------------------------------------------------------------------
 # Settings
 # ---------------------------------------------------------------------------
@@ -42,7 +180,7 @@ TARGET_PAYMENT_INTENTS = 27_000     # all payment attempts, failed included (non
 HISTORY_DAYS = 365                  # how far back the data goes
 REFUND_RATE = 0.03                  # share of succeeded payments that get a refund
 FEE_RATE = 0.029                    # platform fee taken in each settlement
-
+ 
 # Settlement schedule by merchant risk_tier, plus reserve and payout lag per schedule
 SETTLEMENT_SCHEDULE = {"LOW": "daily", "MEDIUM": "weekly", "HIGH": "monthly"}
 RESERVE_RATE = {"daily": 0.0, "weekly": 0.0, "monthly": 0.10}   # share of net held back
@@ -50,10 +188,10 @@ PAYOUT_LAG_DAYS = {"daily": 1, "weekly": 2, "monthly": 5}       # settlement_dat
 INJECT_ISSUES = True                # add duplicates / null gateways to the ledger
 DUPLICATE_RATE = 0.005
 NULL_GATEWAY_RATE = 0.003
-
+ 
 END_DATE = pd.Timestamp.now().normalize() - pd.Timedelta(days=1)
 START_DATE = END_DATE - pd.Timedelta(days=HISTORY_DAYS)
-
+ 
 # ---------------------------------------------------------------------------
 # Reference data (edit these to change the world being simulated)
 # ---------------------------------------------------------------------------
@@ -70,7 +208,7 @@ ACCOUNTS = [
     ("ACT-REF-009",  "Customer Refund & Dispute Liability",   "liability", "CREDIT", "USD", 45200.75),
     ("ACT-BNK-010",  "External Merchant Bank Payout Account", "asset",     "DEBIT",  "USD", 300000.00),
 ]
-
+ 
 MERCHANTS = [
     # merchant_id,   merchant_name,                      country, currency, risk,     industry,                     onboarded_at
     ("MCH-9921-US", "Acme Cloud Services Corp",          "US", "USD", "LOW",    "SaaS & Technology",          "2023-01-15"),
@@ -86,7 +224,7 @@ MERCHANTS = [
     ("MCH-9933-BR", "Cordillera Trading Co",             "BR", "BRL", "HIGH",   "Office Supplies",            "2024-11-02"),
     ("MCH-4477-MX", "Aztec Financial Systems",           "MX", "MXN", "HIGH",   "Professional Services",      "2024-12-10"),
 ]
-
+ 
 DESCRIPTIONS = {
     "SaaS & Technology": "SaaS cloud infrastructure software subscription renewal fee",
     "Office Supplies": "Office stationery, supplies, and equipment purchase ledger audit",
@@ -94,7 +232,7 @@ DESCRIPTIONS = {
     "Professional Services": "Professional legal and corporate accounting consulting services",
     "Logistics & Freight": "Client invoice direct wire transfer multi-gateway routing entry",
 }
-
+ 
 GATEWAYS = [
     "Stripe-Gateway-Primary",
     "Razorpay-Gateway-Primary",
@@ -105,12 +243,12 @@ GATEWAYS = [
     "AuthorizeNet-Payment-Hub",
     "Mollie-European-Routing",
 ]
-
+ 
 # Data Designer samples the non-failed statuses; failures are applied afterwards
 # using per-gateway failure rates (see below), so failures depend on the gateway.
 DD_STATUSES = ["succeeded", "pending", "requires_capture"]
 DD_STATUS_WEIGHTS = [0.85, 0.10, 0.05]
-
+ 
 # Chance that an attempt fails, by gateway. Mollie is the deliberately flaky one.
 GATEWAY_FAILURE_RATE = {
     "Stripe-Gateway-Primary": 0.02,
@@ -124,12 +262,12 @@ GATEWAY_FAILURE_RATE = {
 }
 # Riskier merchants fail more often
 RISK_FAILURE_MULTIPLIER = {"LOW": 0.8, "MEDIUM": 1.0, "HIGH": 1.6}
-
+ 
 FAILURE_REASONS = ["card_declined", "insufficient_funds", "invalid_card", "gateway_timeout", "fraud_block"]
 FAILURE_REASON_WEIGHTS = [0.40, 0.30, 0.12, 0.10, 0.08]
 TIMEOUT_BOOST = {"Mollie-European-Routing": 4.0, "AuthorizeNet-Payment-Hub": 2.0}  # gateway_timeout x
 FRAUD_BOOST = {"LOW": 0.5, "MEDIUM": 1.0, "HIGH": 3.0}                             # fraud_block x
-
+ 
 # Placeholder posting rules: (debit account, credit account). Failed payments post nothing.
 POSTING_RULES = {
     "succeeded":        ("ACT-CLR-002", "ACT-REC-003"),
@@ -137,10 +275,10 @@ POSTING_RULES = {
     "requires_capture": ("ACT-RES-008", "ACT-CLR-002"),
 }
 REFUND_RULE = ("ACT-REF-009", "ACT-CLR-002")
-
+ 
 PAYMENT_INTENT_COLUMNS = ["payment_intent_id", "merchant_id", "amount", "amount_cents", "currency",
                           "status", "failure_reason", "routed_to", "created_at", "posted_at"]
-
+ 
 # Seconds between created_at and posted_at, by status: (min, max)
 POSTING_DELAY = {
     "succeeded": (5, 600),
@@ -148,27 +286,11 @@ POSTING_DELAY = {
     "requires_capture": (3_600, 7 * 86_400),
     "failed": (1, 30),          # only used to fill the lookup; failed rows get no posted_at
 }
-
-
+ 
+ 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-def new_uuid(rnd: random.Random) -> str:
-    """Reproducible uuid4 driven by the seeded random generator."""
-    return str(uuid.UUID(int=rnd.getrandbits(128), version=4))
-
-
-def random_timestamps(n: int, rng: np.random.Generator) -> pd.DatetimeIndex:
-    """Random timestamps in the window: quieter weekends, busier month ends."""
-    days = pd.date_range(START_DATE, END_DATE, freq="D")
-    weights = np.where(days.dayofweek == 5, 0.6, np.where(days.dayofweek == 6, 0.5, 1.0))
-    weights = np.where(days.day >= days.days_in_month - 2, weights * 1.5, weights)
-    weights = weights / weights.sum()
-    day_idx = rng.choice(len(days), size=n, p=weights)
-    seconds = rng.integers(0, 86_400, size=n)
-    return days[day_idx] + pd.to_timedelta(seconds, unit="s")
-
-
 # ---------------------------------------------------------------------------
 # Table builders
 # ---------------------------------------------------------------------------
@@ -179,8 +301,8 @@ def build_accounts() -> pd.DataFrame:
     )
     df.insert(1, "owner_id", "PLATFORM")
     return df
-
-
+ 
+ 
 def build_merchants() -> pd.DataFrame:
     df = pd.DataFrame(
         MERCHANTS,
@@ -189,12 +311,12 @@ def build_merchants() -> pd.DataFrame:
     )
     df["onboarded_at"] = pd.to_datetime(df["onboarded_at"])
     return df
-
-
+ 
+ 
 def generate_intents(n_intents: int, merchants: pd.DataFrame, artifact_dir) -> pd.DataFrame:
     """Use NeMo Data Designer for the random columns of each payment intent."""
     builder = dd.DataDesignerConfigBuilder()
-
+ 
     builder.add_column(dd.SamplerColumnConfig(
         name="merchant_id",
         sampler_type=dd.SamplerType.CATEGORY,
@@ -215,12 +337,12 @@ def generate_intents(n_intents: int, merchants: pd.DataFrame, artifact_dir) -> p
         sampler_type=dd.SamplerType.CATEGORY,
         params=dd.CategorySamplerParams(values=GATEWAYS),
     ))
-
+ 
     designer = DataDesigner(artifact_path=str(artifact_dir))
     results = designer.create(builder, num_records=n_intents, dataset_name="ledger_intents")
     return results.load_dataset()
-
-
+ 
+ 
 def pick_failure_reasons(failed: pd.DataFrame, rng: np.random.Generator) -> list:
     """Failure reason depends on the gateway (timeouts) and merchant risk (fraud blocks)."""
     base = np.array(FAILURE_REASON_WEIGHTS, dtype=float)
@@ -231,8 +353,8 @@ def pick_failure_reasons(failed: pd.DataFrame, rng: np.random.Generator) -> list
         w[FAILURE_REASONS.index("fraud_block")] *= FRAUD_BOOST[risk]
         reasons.append(FAILURE_REASONS[rng.choice(len(w), p=w / w.sum())])
     return reasons
-
-
+ 
+ 
 def build_payment_intents(intents: pd.DataFrame, merchants: pd.DataFrame,
                           rnd: random.Random, rng: np.random.Generator) -> pd.DataFrame:
     """One row per payment attempt, including failed ones."""
@@ -243,13 +365,13 @@ def build_payment_intents(intents: pd.DataFrame, merchants: pd.DataFrame,
     df = df.head(TARGET_PAYMENT_INTENTS).reset_index(drop=True)
     if len(df) < TARGET_PAYMENT_INTENTS:
         raise RuntimeError(f"Data Designer returned {len(df)} rows, need {TARGET_PAYMENT_INTENTS}.")
-
+ 
     n = len(df)
     df["payment_intent_id"] = [new_uuid(rnd) for _ in range(n)]
     df["amount_cents"] = (df["amount"] * 100).round().astype("int64")
     df["amount"] = df["amount_cents"] / 100
-    df["created_at"] = random_timestamps(n, rng).to_numpy()
-
+    df["created_at"] = random_timestamps(n, rng, START_DATE, END_DATE).to_numpy()
+ 
     # Failures: depend on the gateway and on merchant risk tier
     fail_prob = (df["routed_to"].map(GATEWAY_FAILURE_RATE)
                  * df["risk_tier"].map(RISK_FAILURE_MULTIPLIER)).to_numpy()
@@ -257,7 +379,7 @@ def build_payment_intents(intents: pd.DataFrame, merchants: pd.DataFrame,
     df.loc[failed, "status"] = "failed"
     df["failure_reason"] = None
     df.loc[failed, "failure_reason"] = pick_failure_reasons(df[failed], rng)
-
+ 
     # posted_at: when the payment posted to the ledger; failed attempts never post
     lo = df["status"].map(lambda s: POSTING_DELAY[s][0]).to_numpy()
     hi = df["status"].map(lambda s: POSTING_DELAY[s][1]).to_numpy()
@@ -265,8 +387,8 @@ def build_payment_intents(intents: pd.DataFrame, merchants: pd.DataFrame,
     df["posted_at"] = (df["created_at"] + pd.to_timedelta(delay, unit="s")).where(~failed)
     logger.info("Built %d payment intents (%d failed, %.1f%%).", n, failed.sum(), 100 * failed.mean())
     return df
-
-
+ 
+ 
 def build_entries(payment_intents: pd.DataFrame, rnd: random.Random,
                   rng: np.random.Generator) -> pd.DataFrame:
     """One row per payment or refund that posts to the ledger (failed intents are excluded)."""
@@ -277,7 +399,7 @@ def build_entries(payment_intents: pd.DataFrame, rnd: random.Random,
     df["debit_account"] = df["status"].map(lambda s: POSTING_RULES[s][0])
     df["credit_account"] = df["status"].map(lambda s: POSTING_RULES[s][1])
     n = len(df)
-
+ 
     # Refunds: a share of succeeded payments, full or partial, 1-30 days later
     refunds = df[df["status"] == "succeeded"].sample(frac=REFUND_RATE, random_state=SEED).copy()
     r = len(refunds)
@@ -292,13 +414,13 @@ def build_entries(payment_intents: pd.DataFrame, rnd: random.Random,
     refunds["posted_at"] = refunds["created_at"] + pd.to_timedelta(rng.integers(5, 601, size=r), unit="s")
     refunds["description"] = "Customer refund - " + refunds["description"]
     refunds["debit_account"], refunds["credit_account"] = REFUND_RULE
-
+ 
     entries = pd.concat([df, refunds], ignore_index=True)
     entries["amount"] = entries["amount_cents"] / 100      # amount always equals cents / 100
     logger.info("Built %d posted payments and %d refunds.", n, r)
     return entries
-
-
+ 
+ 
 def build_ledger(entries: pd.DataFrame, rnd: random.Random) -> pd.DataFrame:
     """Split each entry into one DEBIT and one CREDIT line."""
     keep = ["payment_intent_id", "original_payment_intent_id", "entry_type", "merchant_id",
@@ -306,20 +428,20 @@ def build_ledger(entries: pd.DataFrame, rnd: random.Random) -> pd.DataFrame:
             "created_at", "posted_at"]
     debit = entries[keep].assign(account_id=entries["debit_account"], direction="DEBIT")
     credit = entries[keep].assign(account_id=entries["credit_account"], direction="CREDIT")
-
+ 
     ledger = (
         pd.concat([debit, credit], ignore_index=True)
         .sort_values(["created_at", "payment_intent_id", "direction"], kind="stable")
         .reset_index(drop=True)
     )
     ledger.insert(0, "ledger_line_id", [new_uuid(rnd) for _ in range(len(ledger))])
-
+ 
     return ledger[["ledger_line_id", "payment_intent_id", "original_payment_intent_id",
                    "entry_type", "merchant_id", "account_id", "amount", "amount_cents",
                    "currency", "direction", "status", "routed_to", "description",
                    "created_at", "posted_at"]]
-
-
+ 
+ 
 def build_settlements(entries: pd.DataFrame, merchants: pd.DataFrame,
                       rnd: random.Random, rng: np.random.Generator) -> pd.DataFrame:
     """Payout schedule depends on merchant risk tier:
@@ -327,7 +449,7 @@ def build_settlements(entries: pd.DataFrame, merchants: pd.DataFrame,
     ok = entries[entries["status"] == "succeeded"].copy()
     ok["risk_tier"] = ok["merchant_id"].map(merchants.set_index("merchant_id")["risk_tier"])
     ok["schedule"] = ok["risk_tier"].map(SETTLEMENT_SCHEDULE)
-
+ 
     posted = ok["posted_at"]
     daily = posted.dt.normalize()
     weekly = posted.dt.to_period("W-FRI").dt.end_time.dt.normalize()
@@ -335,10 +457,10 @@ def build_settlements(entries: pd.DataFrame, merchants: pd.DataFrame,
     ok["settlement_date"] = daily.where(
         ok["schedule"] == "daily", weekly.where(ok["schedule"] == "weekly", monthly)
     ).clip(upper=END_DATE)          # the still-open period is dated today and marked pending
-
+ 
     ok["gross_cents"] = ok["amount_cents"].where(ok["entry_type"] == "payment", 0)
     ok["refund_cents"] = ok["amount_cents"].where(ok["entry_type"] == "refund", 0)
-
+ 
     s = (
         ok.groupby(["merchant_id", "currency", "schedule", "settlement_date"], as_index=False)
         [["gross_cents", "refund_cents"]].sum()
@@ -350,7 +472,7 @@ def build_settlements(entries: pd.DataFrame, merchants: pd.DataFrame,
     ).round().astype("int64")
     s["payout_cents"] = s["net_cents"] - s["reserve_cents"]
     s["payout_account_id"] = "ACT-BNK-010"
-
+ 
     is_recent = s["settlement_date"] >= END_DATE - pd.Timedelta(days=3)
     failed = rng.random(len(s)) < 0.01
     s["status"] = np.where(is_recent, "pending", np.where(failed, "failed", "paid"))
@@ -358,8 +480,8 @@ def build_settlements(entries: pd.DataFrame, merchants: pd.DataFrame,
     s["paid_at"] = (s["settlement_date"] + lag).where(s["status"] == "paid")
     s.insert(0, "settlement_id", [new_uuid(rnd) for _ in range(len(s))])
     return s.sort_values(["settlement_date", "merchant_id"]).reset_index(drop=True)
-
-
+ 
+ 
 def inject_issues(ledger: pd.DataFrame) -> pd.DataFrame:
     """Add realistic mess so downstream data tests have something to catch."""
     dupes = ledger.sample(frac=DUPLICATE_RATE, random_state=SEED)       # exact duplicates
@@ -368,15 +490,15 @@ def inject_issues(ledger: pd.DataFrame) -> pd.DataFrame:
     out.loc[null_idx, "routed_to"] = None
     logger.info("Injected %d duplicate rows and %d null routed_to values.", len(dupes), len(null_idx))
     return out
-
-
+ 
+ 
 # ---------------------------------------------------------------------------
 # Validation and output
 # ---------------------------------------------------------------------------
 def validate(accounts, merchants, payment_intents, ledger, settlements) -> None:
     """Runs on the CLEAN ledger, before any issues are injected."""
     problems = []
-
+ 
     if not accounts["account_id"].is_unique:
         problems.append("duplicate account_id in accounts")
     if not merchants["merchant_id"].is_unique:
@@ -395,7 +517,7 @@ def validate(accounts, merchants, payment_intents, ledger, settlements) -> None:
         problems.append("amount and amount_cents disagree")
     if (ledger["posted_at"] < ledger["created_at"]).any():
         problems.append("posted_at is earlier than created_at")
-
+ 
     # payment_intents <-> ledger consistency
     pi = payment_intents.set_index("payment_intent_id")
     pay_ids = ledger.loc[ledger["entry_type"] == "payment", "payment_intent_id"].unique()
@@ -410,80 +532,63 @@ def validate(accounts, merchants, payment_intents, ledger, settlements) -> None:
     if payment_intents.loc[failed, "failure_reason"].isna().any() or \
             payment_intents.loc[~failed, "failure_reason"].notna().any():
         problems.append("failure_reason must be set only on failed intents")
-
+ 
     onboarded = ledger["merchant_id"].map(merchants.set_index("merchant_id")["onboarded_at"])
     if (ledger["created_at"] < onboarded).any():
         problems.append("ledger rows exist before the merchant was onboarded")
-
+ 
     signed = ledger["amount_cents"].where(ledger["direction"] == "DEBIT", -ledger["amount_cents"])
     unbalanced = signed.groupby(ledger["payment_intent_id"]).sum()
     if (unbalanced != 0).any():
         problems.append(f"{int((unbalanced != 0).sum())} entries do not balance")
-
+ 
     ledger_gross = ledger.loc[
         (ledger["entry_type"] == "payment") & (ledger["status"] == "succeeded")
         & (ledger["direction"] == "DEBIT"), "amount_cents"].sum()
     if ledger_gross != settlements["gross_cents"].sum():
         problems.append("settlement gross does not match succeeded payments in the ledger")
-
-    if problems:
-        raise ValueError("Validation failed: " + "; ".join(problems))
+ 
+    raise_if_problems(problems)
     logger.info("Validation passed (%d intents, %d ledger lines, %d settlements).",
                 len(payment_intents), len(ledger), len(settlements))
-
-
-def save_table(df: pd.DataFrame, name: str, run_dir, latest_dir) -> None:
-    parquet_path = run_dir / f"{name}.parquet"
-    csv_path = run_dir / f"{name}.csv"
-    df.to_parquet(parquet_path, index=False)
-    df.to_csv(csv_path, index=False)
-
-    # Stable copies for downstream tools (dbt, Power BI, etc.)
-    shutil.copy2(parquet_path, latest_dir / parquet_path.name)
-    shutil.copy2(csv_path, latest_dir / csv_path.name)
-    logger.info("Saved %s: %d rows", name, len(df))
-
-
+ 
+ 
 def main() -> None:
     ensure_directories()
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(message)s",
-        handlers=[logging.FileHandler(LOGS_DIR / "double_ledger_gen.log", encoding="utf-8"),
-                  logging.StreamHandler()],
-    )
-
-    run_dir = create_parquet_timestamped_dir("double_ledger")
-    latest_dir = SYNTHETIC_DATA_DIR / "latest"
-    latest_dir.mkdir(parents=True, exist_ok=True)
+    setup_logging(DATASET_NAME)
+ 
+    run_dir = create_parquet_timestamped_dir(DATASET_NAME)
+    latest_dir = get_latest_dir(DATASET_NAME)
     logger.info("Output folder: %s", run_dir)
-
+ 
     rnd = random.Random(SEED)
     rng = np.random.default_rng(SEED)
-
+ 
     # Order matters: reference tables first, then ledger, then settlements.
     accounts = build_accounts()
     merchants = build_merchants()
-
+ 
     logger.info("Generating %d payment attempts with Data Designer...", TARGET_PAYMENT_INTENTS)
     intents = generate_intents(TARGET_PAYMENT_INTENTS, merchants, run_dir / "dd_artifacts")
-
+ 
     payment_intents = build_payment_intents(intents, merchants, rnd, rng)
     entries = build_entries(payment_intents, rnd, rng)
     ledger = build_ledger(entries, rnd)
     settlements = build_settlements(entries, merchants, rnd, rng)
     validate(accounts, merchants, payment_intents, ledger, settlements)
-
+ 
     if INJECT_ISSUES:
         ledger = inject_issues(ledger)
-
+ 
     save_table(accounts, "accounts", run_dir, latest_dir)
     save_table(merchants, "merchants", run_dir, latest_dir)
     save_table(payment_intents[PAYMENT_INTENT_COLUMNS], "payment_intents", run_dir, latest_dir)
     save_table(ledger, "ledger", run_dir, latest_dir)
     save_table(settlements, "settlements", run_dir, latest_dir)
     logger.info("Done.")
-
-
+ 
+ 
 if __name__ == "__main__":
     main()
+ 
+Claude finished the response
