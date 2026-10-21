@@ -1,0 +1,113 @@
+{
+  "num_records": 50000,
+  "columns": [
+    {
+      "name": "ledger_line_id",
+      "type": "sequence",
+      "prefix": "LIN-",
+      "start": 100001,
+      "step": 1
+    },
+    {
+      "name": "payment_intent_id",
+      "type": "sequence",
+      "prefix": "TXN-",
+      "start": 500001,
+      "step": 1
+    },
+    {
+      "name": "merchant_id",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": [
+        "MCH-9921-US",
+        "MCH-4410-GB",
+        "MCH-8832-CA",
+        "MCH-1109-AU",
+        "MCH-5542-DE",
+        "MCH-3318-FR",
+        "MCH-7790-JP",
+        "MCH-2245-SG",
+        "MCH-6612-NL",
+        "MCH-1184-SE",
+        "MCH-9933-BR",
+        "MCH-4477-MX"
+      ]
+    },
+    {
+      "name": "account_id",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": [
+        "ACT-ROOT-001",
+        "ACT-CLR-002",
+        "ACT-REC-003",
+        "ACT-FEE-004",
+        "ACT-SET-005",
+        "ACT-REV-006",
+        "ACT-TAX-007",
+        "ACT-RES-008",
+        "ACT-REF-009",
+        "ACT-BNK-010"
+      ]
+    },
+    {
+      "name": "amount",
+      "type": "float",
+      "min": 10.00,
+      "max": 5000.00,
+      "decimals": 2
+    },
+    {
+      "name": "amount_cents",
+      "type": "int",
+      "min": 1000,
+      "max": 500000
+    },
+    {
+      "name": "currency",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": ["USD", "EUR", "GBP", "CAD"]
+    },
+    {
+      "name": "direction",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": ["DEBIT", "CREDIT"]
+    },
+    {
+      "name": "status",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": ["succeeded", "pending", "failed", "requires_capture"]
+    },
+    {
+      "name": "routed_to",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": [
+        "Stripe-Gateway-Primary",
+        "Razorpay-Gateway-Primary",
+        "Adyen-Failover-Gateway",
+        "CheckoutCom-Routing-Engine",
+        "PayPal-Braintree-Gateway",
+        "Worldpay-Global-Processor",
+        "AuthorizeNet-Payment-Hub",
+        "Mollie-European-Routing"
+      ]
+    },
+    {
+      "name": "description",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": [
+        "Monthly office rent and utilities payment settlement record",
+        "Client invoice direct wire transfer multi-gateway routing entry",
+        "SaaS cloud infrastructure software subscription renewal fee",
+        "Office stationery, supplies, and equipment purchase ledger audit",
+        "Professional legal and corporate accounting consulting services"
+      ]
+    }
+  ]
+}

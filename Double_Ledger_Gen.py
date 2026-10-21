@@ -56,6 +56,18 @@ def main():
                         params=dd.CategorySamplerParams(values=values),
                     )
                 )
+            elif col_type == "sequence":
+                # Handle unique sequence/incrementing primary keys for transactional tables
+                prefix = col.get("prefix", "")
+                start = col.get("start", 1)
+                
+                config_builder.add_column(
+                    dd.SequenceColumnConfig(
+                        name=col_name,
+                        prefix=prefix,
+                        start=start
+                    )
+                )
 
         # Configure run settings
         run_config = dd.RunConfig(buffer_size=1000)

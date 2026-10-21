@@ -9,7 +9,13 @@
         "ACT-ROOT-001",
         "ACT-CLR-002",
         "ACT-REC-003",
-        "ACT-FEE-004"
+        "ACT-FEE-004",
+        "ACT-SET-005",
+        "ACT-REV-006",
+        "ACT-TAX-007",
+        "ACT-RES-008",
+        "ACT-REF-009",
+        "ACT-BNK-010"
       ]
     },
     {
@@ -31,20 +37,26 @@
         "Main Operating Checking Account",
         "Gateway Clearing Settlement Account",
         "Merchant Accounts Receivable",
-        "Platform Service Fee Account"
+        "Platform Service Fee Account",
+        "Daily Settlement Holding Account",
+        "Platform Commission & Markup Revenue",
+        "Tax Liability Withholding Account",
+        "Merchant Rolling Reserve Account",
+        "Customer Refund & Dispute Liability",
+        "External Merchant Bank Payout Account"
       ]
     },
     {
       "name": "currency",
       "type": "sampler",
       "sampler_type": "category",
-      "values": ["USD", "EUR", "GBP"]
+      "values": ["USD", "EUR", "GBP", "CAD", "AUD"]
     },
     {
       "name": "balance",
       "type": "sampler",
       "sampler_type": "category",
-      "values": ["154320.50", "89400.12", "1250000.00", "45200.75"]
+      "values": ["154320.50", "89400.12", "1250000.00", "45200.75", "300000.00", "12500.00"]
     }
   ]
 }

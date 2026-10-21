@@ -12,6 +12,7 @@ venv/
 exports/
 data/
 archive/
+ot_folder/
 
 # Runtime Logs & Artifacts
 logs/

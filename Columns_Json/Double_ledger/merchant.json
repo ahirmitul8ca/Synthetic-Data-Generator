@@ -1,5 +1,5 @@
 {
-  "num_records": 10,
+  "num_records": 12,
   "columns": [
     {
       "name": "merchant_id",
@@ -9,7 +9,15 @@
         "MCH-9921-US",
         "MCH-4410-GB",
         "MCH-8832-CA",
-        "MCH-1109-AU"
+        "MCH-1109-AU",
+        "MCH-5542-DE",
+        "MCH-3318-FR",
+        "MCH-7790-JP",
+        "MCH-2245-SG",
+        "MCH-6612-NL",
+        "MCH-1184-SE",
+        "MCH-9933-BR",
+        "MCH-4477-MX"
       ]
     },
     {
@@ -17,34 +25,43 @@
       "type": "sampler",
       "sampler_type": "category",
       "values": [
-        "Alpha Global Electronics Inc.",
-        "Beta Cloud SaaS Solutions",
-        "Gamma Digital Media & Ads",
-        "Delta Retail & Logistics Corp."
+        "Acme Cloud Services Corp",
+        "Global Office Supplies Inc",
+        "Metro Utilities & Power",
+        "Apex Legal & Accounting Partners",
+        "Prime Logistics & Freight",
+        "Vanguard Tech Solutions",
+        "Horizon Global Enterprise",
+        "Pacific Rim Holdings",
+        "Nordic Digital Services",
+        "Meridian Logistics Group",
+        "Cordillera Trading Co",
+        "Aztec Financial Systems"
       ]
     },
     {
-      "name": "business_category",
+      "name": "country_code",
       "type": "sampler",
       "sampler_type": "category",
-      "values": [
-        "E-Commerce & Retail",
-        "Software & Subscriptions",
-        "Digital Advertising",
-        "Professional Services"
-      ]
-    },
-    {
-      "name": "country",
-      "type": "sampler",
-      "sampler_type": "category",
-      "values": ["USA", "GBR", "CAN", "AUS"]
+      "values": ["US", "GB", "CA", "AU", "DE", "FR", "JP", "SG", "NL", "SE", "BR", "MX"]
     },
     {
       "name": "risk_tier",
       "type": "sampler",
       "sampler_type": "category",
       "values": ["LOW", "MEDIUM", "HIGH"]
+    },
+    {
+      "name": "industry_category",
+      "type": "sampler",
+      "sampler_type": "category",
+      "values": [
+        "SaaS & Technology",
+        "Office Supplies",
+        "Utilities & Infrastructure",
+        "Professional Services",
+        "Logistics & Freight"
+      ]
     }
   ]
 }
