@@ -1,37 +1,38 @@
+
 #!/usr/bin/env python3
 """
 Synthetic data generator for the Customer Churn & Revenue Intelligence Engine.
-
+ 
 Produces the 5 raw (bronze) tables from the PRD:
     raw_customers, raw_subscriptions, raw_invoices, raw_product_events, raw_support_tickets
 plus ground_truth_customers (answer key to validate your dbt marts against).
-
+ 
 Design: a month-by-month billing simulation per customer drives everything else,
 so the tables are mutually consistent (events decay before voluntary churn,
 involuntary churn emerges from failed dunning cycles, tickets spike before churn, etc.).
-
+ 
 Money columns are integer CENTS (your staging layer converts to decimals).
 Every table has `_ingested_at`; invoices/events/tickets contain ~0.5-1% duplicate
 webhook rows so your stg_ models have something to deduplicate.
-
-Run:  python generators/churn_engine.py   (or: python run.py churn_engine)
+ 
+Run:  python generators/Customer_Churn.py   (or: python run.py Customer_Churn)
 Tune the RUN SETTINGS below.
 """
 import random
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-
-# allow running this file directly: python generators/churn_engine.py
+ 
+# allow running this file directly: python generators/Customer_Churn.py
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
-
+ 
+ 
 import numpy as np
 import pandas as pd
-
+ 
 from File_Manager import create_parquet_timestamped_dir, get_latest_dir
 from helpers import raise_if_problems, save_table, setup_logging
-
+ 
 # --------------------------------------------------------------------------- #
 # RUN SETTINGS
 # --------------------------------------------------------------------------- #
@@ -39,8 +40,8 @@ N_CUSTOMERS = 5000
 SEED = 42
 DIRTY_RATE = 0.02        # fraction of rows corrupted with data-quality issues (0 = clean)
 ADD_DUPLICATES = True    # duplicate webhook rows for invoices / events / tickets
-OUTPUT_NAME = "churn_engine"
-
+OUTPUT_NAME = "Customer_Churn"
+ 
 # --------------------------------------------------------------------------- #
 # Config
 # --------------------------------------------------------------------------- #
@@ -48,7 +49,7 @@ AS_OF = datetime(2026, 10, 31, 23, 59, 59)          # "today" inside the dataset
 SIGNUP_START = datetime(2024, 1, 1)
 SIGNUP_END = datetime(2026, 9, 30)
 WEEK = 7 * 86400
-
+ 
 PLANS = ["basic", "pro", "enterprise"]
 PRICE_PER_SEAT = {"basic": 15, "pro": 49, "enterprise": 149}   # USD / month
 SEAT_RANGE = {"1-10": (1, 2), "11-50": (1, 4), "51-200": (3, 8),
@@ -56,7 +57,7 @@ SEAT_RANGE = {"1-10": (1, 2), "11-50": (1, 4), "51-200": (3, 8),
 INIT_PLAN_P = {"1-10": [.70, .28, .02], "11-50": [.40, .50, .10],
                "51-200": [.15, .55, .30], "201-1000": [.05, .40, .55],
                "1000+": [.00, .20, .80]}
-
+ 
 COUNTRIES = ["CA", "US", "GB", "DE", "AU", "IN", "FR", "NL", "BR", "SG"]
 COUNTRY_P = [.18, .34, .10, .08, .07, .07, .05, .04, .04, .03]
 CHANNELS = ["organic_search", "paid_search", "paid_social", "referral",
@@ -65,7 +66,7 @@ CHANNEL_P = [.22, .18, .14, .12, .08, .10, .16]
 SIZES = ["1-10", "11-50", "51-200", "201-1000", "1000+"]
 SIZE_P = [.38, .30, .18, .10, .04]
 SIZE_P_ENTERPRISE_CH = [.10, .20, .30, .25, .15]     # outbound/partner skew larger
-
+ 
 # churn drivers (multipliers on the base monthly voluntary hazard)
 BASE_VOL = 0.026
 CH_MULT = {"organic_search": .8, "paid_search": 1.2, "paid_social": 1.5, "referral": .6,
@@ -73,27 +74,27 @@ CH_MULT = {"organic_search": .8, "paid_search": 1.2, "paid_social": 1.5, "referr
 SIZE_MULT = {"1-10": 1.5, "11-50": 1.1, "51-200": .9, "201-1000": .7, "1000+": .5}
 PLAN_MULT = {"basic": 1.4, "pro": 1.0, "enterprise": .6}
 TENURE_MULT = {0: 2.2, 1: 1.8, 2: 1.4, 11: 2.8, 12: 1.5}   # onboarding drop-off + annual renewal spike
-
+ 
 P_UP, P_DOWN, P_SEAT_UP, P_SEAT_DOWN = 0.022, 0.010, 0.030, 0.012
 P_FAIL = {"basic": .08, "pro": .05, "enterprise": .025}     # first-attempt card failure
 RETRY_SUCCESS = (0.45, 0.40, 0.30)                          # attempts 2, 3, 4
-
+ 
 VOL_REASONS = ["too_expensive", "missing_features", "switched_to_competitor",
                "low_usage", "poor_support", "business_closed"]
 VOL_REASON_P = [.25, .20, .20, .18, .10, .07]
-
+ 
 EVENT_NAMES = ["login", "dashboard_view", "report_created", "report_shared",
                "export_data", "invite_user", "integration_connected", "api_call"]
 EVENT_P = [.28, .25, .12, .06, .07, .03, .02, .17]
 USAGE_SIZE_MULT = {"1-10": .7, "11-50": 1.0, "51-200": 1.5, "201-1000": 2.2, "1000+": 3.2}
 TICKET_SIZE_MULT = {"1-10": .7, "11-50": 1.0, "51-200": 1.3, "201-1000": 1.7, "1000+": 2.2}
 DECAY = np.array([0.12, 0.30, 0.55, 0.80])                  # index = weeks before end (0 = last week)
-
+ 
 PRIORITIES = ["low", "medium", "high", "urgent"]
 PRIORITY_P = [.35, .40, .20, .05]
 PRIORITY_MEDIAN_HRS = {"low": 48, "medium": 24, "high": 10, "urgent": 4}
-
-
+ 
+ 
 # --------------------------------------------------------------------------- #
 # Customers
 # --------------------------------------------------------------------------- #
@@ -119,8 +120,8 @@ def build_customers(rng: np.random.Generator, n: int) -> pd.DataFrame:
     })
     return df.sort_values("signup_ts").reset_index(drop=True).assign(
         customer_id=lambda d: [f"cus_{i:06d}" for i in range(1, len(d) + 1)])
-
-
+ 
+ 
 # --------------------------------------------------------------------------- #
 # Subscription / billing simulation (the engine that drives everything)
 # --------------------------------------------------------------------------- #
@@ -128,8 +129,8 @@ def add_months(dt0: datetime, k: int, anchor: int) -> datetime:
     y = dt0.year + (dt0.month - 1 + k) // 12
     mo = (dt0.month - 1 + k) % 12 + 1
     return dt0.replace(year=y, month=mo, day=anchor)
-
-
+ 
+ 
 def dunning(r: random.Random, plan: str, allow_fail: bool):
     if r.random() >= P_FAIL[plan]:
         return 1, "paid"
@@ -137,8 +138,8 @@ def dunning(r: random.Random, plan: str, allow_fail: bool):
         if r.random() < p:
             return attempt, "paid"
     return (4, "failed") if allow_fail else (3, "paid")
-
-
+ 
+ 
 def simulate_customer(c: dict, r: random.Random, counter: list):
     signup = c["signup_ts"].to_pydatetime()
     anchor = min(signup.day, 28)
@@ -174,13 +175,13 @@ def simulate_customer(c: dict, r: random.Random, counter: list):
                    "status": "Active", "started_at": cs, "ended_at": None,
                    "canceled_at": None, "cancellation_reason": None}
             segs.append(seg)
-
+ 
         allow_fail = cs + timedelta(days=14) <= AS_OF
         attempts, status = dunning(r, plan, allow_fail)
         invs.append({"customer_id": c["customer_id"], "subscription_id": seg["subscription_id"],
                      "amount_due": seg["mrr_amount"], "status": status,
                      "attempt_count": attempts, "invoice_date": cs.date()})
-
+ 
         canceled_at = None
         if status == "failed":                               # dunning exhausted -> involuntary churn
             canceled_at = cs + timedelta(days=14, hours=r.randint(0, 20))
@@ -201,8 +202,8 @@ def simulate_customer(c: dict, r: random.Random, counter: list):
             break
         m += 1
     return segs, invs, out
-
-
+ 
+ 
 # --------------------------------------------------------------------------- #
 # Events + tickets from a shared customer-week grid
 # --------------------------------------------------------------------------- #
@@ -216,8 +217,8 @@ def build_week_grid(cust: pd.DataFrame):
     w_start = signup_s[idx] + k * WEEK
     w_end = np.minimum(w_start + WEEK, end_s[idx])
     return idx, k, wte, w_start, w_end
-
-
+ 
+ 
 def build_events(rng, cust, grid):
     idx, k, wte, w_start, w_end = grid
     lam = 7.0 * cust["usage_scale"].to_numpy()[idx]
@@ -239,8 +240,8 @@ def build_events(rng, cust, grid):
     ev.insert(0, "event_id", [f"evt_{i:09d}" for i in range(1, len(ev) + 1)])
     ev["_ingested_at"] = ev["event_timestamp"] + pd.to_timedelta(rng.integers(1, 300, len(ev)), "s")
     return ev
-
-
+ 
+ 
 def build_tickets(rng, cust, grid):
     idx, k, wte, w_start, w_end = grid
     lam = 0.06 * cust["ticket_scale"].to_numpy()[idx] * (w_end - w_start) / WEEK
@@ -272,8 +273,8 @@ def build_tickets(rng, cust, grid):
     tk.insert(0, "ticket_id", [f"tkt_{i:07d}" for i in range(1, len(tk) + 1)])
     tk["_ingested_at"] = tk["created_at"] + pd.to_timedelta(rng.integers(1, 600, len(tk)), "s")
     return tk
-
-
+ 
+ 
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
@@ -284,9 +285,9 @@ def add_duplicates(rng, df, frac, lag_max):
     dup = df.sample(frac=frac, random_state=int(rng.integers(0, 2**31 - 1))).copy()
     dup["_ingested_at"] = dup["_ingested_at"] + pd.to_timedelta(rng.integers(5, lag_max, len(dup)), "s")
     return pd.concat([df, dup]).sort_values("_ingested_at").reset_index(drop=True)
-
-
-
+ 
+ 
+ 
 def inject_dirty(rng, t, rate):
     """Inject realistic data-quality problems into the raw tables (ground truth stays clean)."""
     log = {}
@@ -297,37 +298,37 @@ def inject_dirty(rng, t, rate):
         mode = rng.integers(0, 3, len(v))
         return pd.Series(np.where(mode == 0, v.str.upper(), np.where(mode == 1, " " + v + " ", v.str.title())),
                          index=v.index)
-
+ 
     c = t["raw_customers"]
     ix = idx(c, rate);        c.loc[ix, "country"] = rng.choice(["usa", "United States", "UK", "can", None], len(ix)); log["customers.country variants/nulls"] = len(ix)
     ix = idx(c, rate);        c.loc[ix, "acquisition_channel"] = messy_case(c["acquisition_channel"], ix); log["customers.channel casing/whitespace"] = len(ix)
     ix = idx(c, rate / 2);    c.loc[ix, "company_size"] = None; log["customers.company_size null"] = len(ix)
-
+ 
     s_ = t["raw_subscriptions"]
     ix = idx(s_, rate);       s_.loc[ix, "status"] = messy_case(s_["status"], ix); log["subscriptions.status casing/whitespace"] = len(ix)
     ix = idx(s_, rate / 4);   s_.loc[ix, "mrr_amount"] = -s_.loc[ix, "mrr_amount"]; log["subscriptions.negative mrr"] = len(ix)
     cx = s_[s_["canceled_at"].notna()]
     ix = idx(cx, rate / 4);   s_.loc[ix, "canceled_at"] = s_.loc[ix, "started_at"] - pd.Timedelta(days=3); log["subscriptions.canceled_at before started_at"] = len(ix)
-
+ 
     i_ = t["raw_invoices"]
     i_["attempt_count"] = i_["attempt_count"].astype("Int64")
     ix = idx(i_, rate);       i_.loc[ix, "status"] = messy_case(i_["status"], ix); log["invoices.status casing/whitespace"] = len(ix)
     ix = idx(i_, rate / 2);   i_.loc[ix, "attempt_count"] = pd.NA; log["invoices.attempt_count null"] = len(ix)
     ix = idx(i_, rate / 4);   i_.loc[ix, "amount_due"] = 0; log["invoices.zero amount_due"] = len(ix)
-
+ 
     e = t["raw_product_events"]
     ix = idx(e, rate / 10);   e.loc[ix, "event_name"] = messy_case(e["event_name"], ix); log["events.event_name casing/whitespace"] = len(ix)
     ix = idx(e, rate / 40);   e.loc[ix, "customer_id"] = None; log["events.null customer_id"] = len(ix)
     ix = idx(e, rate / 40);   e.loc[ix, "customer_id"] = "cus_999999"; log["events.orphan customer_id"] = len(ix)
     ix = idx(e, rate / 100);  e.loc[ix, "event_timestamp"] = pd.Timestamp(AS_OF) + pd.Timedelta(days=45); log["events.future timestamp"] = len(ix)
-
+ 
     k = t["raw_support_tickets"]
     ix = idx(k, rate);        k.loc[ix, "priority"] = messy_case(k["priority"], ix); log["tickets.priority casing/whitespace"] = len(ix)
     rx = k[k["resolved_at"].notna()]
     ix = idx(rx, rate / 2);   k.loc[ix, "resolved_at"] = k.loc[ix, "created_at"] - pd.Timedelta(hours=5); log["tickets.resolved_at before created_at"] = len(ix)
     return log
-
-
+ 
+ 
 def validate_clean(t):
     """Integrity checks on the CLEAN tables (before duplicates / dirty data are injected)."""
     c, s, i, e = t["raw_customers"], t["raw_subscriptions"], t["raw_invoices"], t["raw_product_events"]
@@ -345,17 +346,17 @@ def validate_clean(t):
     if (e["event_timestamp"] > pd.Timestamp(AS_OF)).any():
         problems.append("events after the as-of date")
     raise_if_problems(problems)
-
-
+ 
+ 
 def main():
     log = setup_logging(OUTPUT_NAME)
     rng = np.random.default_rng(SEED)
     r = random.Random(SEED)
     run_dir = create_parquet_timestamped_dir(OUTPUT_NAME)
     latest_dir = get_latest_dir(OUTPUT_NAME)
-
+ 
     cust = build_customers(rng, N_CUSTOMERS)
-
+ 
     # customer-level latent attributes
     cust["plan"] = [r.choices(PLANS, INIT_PLAN_P[s])[0] for s in cust["company_size"]]
     cust["seats"] = [r.randint(*SEAT_RANGE[s]) for s in cust["company_size"]]
@@ -363,7 +364,7 @@ def main():
                            * cust["company_size"].map(USAGE_SIZE_MULT).to_numpy()
                            * cust["plan"].map({"basic": .8, "pro": 1.0, "enterprise": 1.3}).to_numpy())
     cust["ticket_scale"] = cust["company_size"].map(TICKET_SIZE_MULT).to_numpy()
-
+ 
     # billing simulation
     counter, subs, invs, outcomes = [0], [], [], []
     for c in cust.to_dict("records"):
@@ -376,13 +377,13 @@ def main():
     cust["churn_type"] = oc["churn_type"]
     cust["cancellation_reason"] = oc["reason"]
     cust["end_ts"] = cust["canceled_at"].fillna(pd.Timestamp(AS_OF))
-
+ 
     tenure_days = (cust["end_ts"] - cust["signup_ts"]).dt.days
     cust["at_risk"] = (cust["canceled_at"].isna() & (tenure_days > 60)
                        & (rng.random(len(cust)) < 0.10))
     cust["decaying"] = (cust["churn_type"] == "voluntary") | cust["at_risk"]
     grid = build_week_grid(cust)
-
+ 
     raw_customers = pd.DataFrame({
         "customer_id": cust["customer_id"],
         "signup_date": cust["signup_ts"].dt.date,
@@ -396,7 +397,7 @@ def main():
     raw_subscriptions = raw_subscriptions[[
         "subscription_id", "customer_id", "plan_tier", "mrr_amount", "status",
         "started_at", "ended_at", "canceled_at", "cancellation_reason", "_ingested_at"]]
-
+ 
     raw_invoices = pd.DataFrame(invs).sort_values(["invoice_date", "customer_id"]).reset_index(drop=True)
     raw_invoices.insert(0, "invoice_id", [f"inv_{i:08d}" for i in range(1, len(raw_invoices) + 1)])
     raw_invoices["_ingested_at"] = (pd.to_datetime(raw_invoices["invoice_date"])
@@ -404,16 +405,16 @@ def main():
                                     + pd.to_timedelta(rng.integers(60, 3600, len(raw_invoices)), "s"))
     raw_invoices = raw_invoices[["invoice_id", "subscription_id", "customer_id", "amount_due", "status",
                                  "attempt_count", "invoice_date", "_ingested_at"]]
-
+ 
     truth = cust[["customer_id", "signup_ts", "canceled_at", "churn_type",
                   "cancellation_reason", "at_risk"]].rename(columns={"signup_ts": "signup_at"})
     tables = {"raw_customers": raw_customers, "raw_subscriptions": raw_subscriptions,
               "raw_invoices": raw_invoices, "raw_product_events": build_events(rng, cust, grid),
               "raw_support_tickets": build_tickets(rng, cust, grid)}
-
+ 
     validate_clean(tables)                       # fail fast on the clean data
     log.info("Clean-data validation passed")
-
+ 
     if ADD_DUPLICATES:
         tables["raw_invoices"] = add_duplicates(rng, tables["raw_invoices"], 0.01, 3600)
         tables["raw_product_events"] = add_duplicates(rng, tables["raw_product_events"], 0.004, 120)
@@ -421,17 +422,18 @@ def main():
     if DIRTY_RATE > 0:
         for k_, v_ in inject_dirty(rng, tables, DIRTY_RATE).items():
             log.info("dirty: %-46s %8s", k_, f"{v_:,}")
-
+ 
     tables["ground_truth_customers"] = truth     # answer key stays clean
     for name, df in tables.items():
         save_table(df, name, run_dir, latest_dir)
-
+ 
     churned = truth["churn_type"].notna().sum()
     log.info("customers=%s churned=%s (%.1f%%) voluntary_share=%.1f%% at_risk=%s",
              f"{len(truth):,}", f"{churned:,}", 100 * churned / len(truth),
              100 * (truth["churn_type"] == "voluntary").sum() / max(churned, 1), int(truth["at_risk"].sum()))
     log.info("Output: %s (copied to %s)", run_dir, latest_dir)
-
-
+ 
+ 
 if __name__ == "__main__":
     main()
+ 
