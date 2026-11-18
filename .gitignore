@@ -13,6 +13,7 @@ exports/
 data/
 archive/
 ot_folder/
+Synthetic_Data/
 
 # Runtime Logs & Artifacts
 logs/
